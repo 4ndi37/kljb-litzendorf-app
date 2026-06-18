@@ -114,15 +114,34 @@ Wird via `load_dotenv('key.env')` geladen. Enthält **Secrets – nicht committe
 ## Lokale Entwicklung
 
 ```bash
+# Linux/Mac:
 python -m venv venv && source venv/bin/activate
+# Windows (PowerShell):  python -m venv venv ; .\venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 # key.env mit den nötigen Werten anlegen (siehe oben)
 python app.py            # startet auf http://0.0.0.0:5000 (debug=False)
 ```
 
 DB-Schemaänderungen: Modelle in `models.py` anpassen. Da `app.py` beim Start `db.create_all()`
-aufruft, werden **neue Tabellen** automatisch angelegt. Für Änderungen an bestehenden Tabellen
-Alembic nutzen (`flask db migrate -m "…"` / `flask db upgrade`).
+aufruft, werden **neue Tabellen** automatisch angelegt. **Aber Achtung:** `create_all` fügt
+**keine neuen Spalten** zu bereits bestehenden Tabellen hinzu – dafür Alembic nutzen
+(`flask db migrate -m "…"` / `flask db upgrade`) oder notfalls per Hand `ALTER TABLE`. Die
+Migrationen sind inkrementelle Patches auf das per `create_all` gebaute Schema (kein
+„from scratch"-Aufbau).
+
+---
+
+## Repository / Versionskontrolle
+
+Privates GitHub-Repo: **https://github.com/4ndi37/kljb-litzendorf-app** (Account `4ndi37`).
+Repo-Wurzel ist dieser Ordner (`Programmierdateien/`), Branch `main`, Remote `origin`.
+
+- **`.gitignore` schützt Secrets/Daten:** `key.env`, `*.db`, `*.bak`, `venv/`, `*.log`,
+  `__pycache__/` u.a. landen **nie** im Repo. Im Zweifel vor dem Push mit `git status` bzw.
+  `git check-ignore <datei>` prüfen.
+- **Git ≠ Deployment:** `git push` lädt nur Code zu GitHub (Versionierung/Backup) und ändert
+  **nichts** auf dem Server. Das Ausrollen läuft separat per rsync (siehe unten).
+- Alltag: `git add -A` → `git commit -m "…"` → `git push`.
 
 ---
 
@@ -146,6 +165,9 @@ sudo systemctl restart kljb
 sudo journalctl -u kljb -n 50 --no-pager
 ```
 
+- **Neue DB-Migrationen?** Nach dem rsync auf dem Server einmal `flask db upgrade` ausführen
+  (venv aktiv, `export FLASK_APP=app.py`). Der App-Start selbst spielt **keine** Migrationen ab
+  (nur `create_all`), Spaltenänderungen also nicht vergessen.
 - **DB-Datei ist `kljb_zentrum.db`** (nicht `kljb.db`!) – bei DB-Abfragen darauf achten:
   `sqlite3 ~/app/kljb_zentrum.db "…"`.
 - `key.env` und die DB liegen auf dem Server und werden **nicht** per rsync überschrieben
@@ -169,8 +191,4 @@ sudo journalctl -u kljb -n 50 --no-pager
 
 ## Offene Punkte / Ideen
 
-- Projekt unter **Git/GitHub** stellen (privates Repo; `key.env`, `*.db` niemals committen).
 - Gruppenleiter umbenennen: aktuell keine UI-Funktion – nur per direktem DB-`UPDATE`.
-
-> Hinweis: In `templates/` lag eine versehentlich abgelegte `inf.code-workspace` (VS-Code-Datei,
-> gehört nicht in den Template-Ordner) – bei Gelegenheit prüfen/verschieben.
