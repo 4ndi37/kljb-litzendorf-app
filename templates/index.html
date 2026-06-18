@@ -1,0 +1,188 @@
+{% extends "layout.html" %}
+{% block title %}Startseite – KLJB Litzendorf{% endblock %}
+
+{% block content %}
+<div class="main-content">
+
+    {% if current_user.ist_admin %}
+    <div class="admin-box">
+        <strong>Admin-Bereich:</strong>
+        <a href="{{ url_for('admin.admin_konsole') }}">→ Zur Admin-Konsole</a>
+    </div>
+    {% endif %}
+
+    <!-- Status -->
+    {% if modus == 'lager' %}
+    <div class="status-box live">
+        <div class="status-label"><i data-lucide="radio-tower" class="icon"></i> Live – {{ aktuelles_lager.name }} läuft</div>
+        {% if status %}
+        <div class="status-title">
+            {% if status.kategorie == 'spiel' and status.konzept_info %}
+                {{ status.konzept_info.titel }}
+            {% elif status.custom_titel %}
+                {{ status.custom_titel }}
+            {% else %}
+                {{ status.kategorie | capitalize }}
+            {% endif %}
+        </div>
+        <div class="status-meta">{{ heute_tag }} · bis {{ status.ende }} Uhr · {{ status.verantwortliche }}</div>
+        {% else %}
+        <div class="status-title">Momentan kein Programmpunkt</div>
+        {% endif %}
+        <a href="/programm" class="btn btn-primary btn-sm btn-mt">Zum Tagesablauf</a>
+    </div>
+
+    {% elif modus == 'heute' %}
+    <div class="status-box upcoming">
+        <div class="status-label"><i data-lucide="calendar-check" class="icon"></i> Heute</div>
+        <div class="status-title">{{ status.name }}</div>
+        <div class="status-meta">{% if status.startzeit %}<i data-lucide="clock" class="icon"></i> {{ status.startzeit }} Uhr{% endif %}{% if status.ort %}{% if status.startzeit %}  ·  {% endif %}<i data-lucide="map-pin" class="icon"></i> {{ status.ort }}{% endif %}</div>
+        <a href="/termine" class="btn btn-secondary btn-sm btn-mt">Alle Termine</a>
+    </div>
+
+    {% elif modus == 'termin' %}
+    <div class="status-box upcoming">
+        <div class="status-label">Nächster Termin</div>
+        {% if status %}
+        <div class="status-title">{{ status.name }}</div>
+        <div class="status-meta"><i data-lucide="calendar" class="icon"></i> {{ status.start.strftime('%d.%m.%Y') }}{% if status.ende %} – {{ status.ende.strftime('%d.%m.%Y') }}{% endif %}{% if status.startzeit %}  ·  <i data-lucide="clock" class="icon"></i> {{ status.startzeit }} Uhr{% endif %}{% if status.ort %}  ·  <i data-lucide="map-pin" class="icon"></i> {{ status.ort }}{% endif %}</div>
+        {% else %}
+        <div class="status-title">Keine Termine geplant</div>
+        {% endif %}
+        <a href="/termine" class="btn btn-secondary btn-sm btn-mt">Alle Termine</a>
+    </div>
+
+    {% else %}
+    <div class="status-box idle">
+        <div class="status-label">Ruhephase</div>
+        <div class="status-title">Kein Lager, keine Termine</div>
+        <a href="/termine" class="btn btn-secondary btn-sm btn-mt">Termin planen</a>
+    </div>
+    {% endif %}
+
+    <!-- Navigation Tiles -->
+    <div class="section-heading">Navigation</div>
+    <div class="dashboard-grid">
+
+        <a href="/todos" class="nav-card c-green">
+            <span class="nav-icon"><i data-lucide="check-circle" class="icon-lg"></i></span>
+            <span class="nav-label">Aufgaben</span>
+            <span class="nav-sub">Meine To-Dos</span>
+        </a>
+
+        <a href="/schichtplan" class="nav-card c-green">
+            <span class="nav-icon"><i data-lucide="clipboard-list" class="icon-lg"></i></span>
+            <span class="nav-label">Schichtplan</span>
+            {% if freie_schichten > 0 %}
+            <span class="nav-badge">{{ freie_schichten }} offen</span>
+            {% else %}
+            <span class="nav-sub">Alles besetzt</span>
+            {% endif %}
+        </a>
+
+        <a href="/termine" class="nav-card c-green">
+            <span class="nav-icon"><i data-lucide="calendar" class="icon-lg"></i></span>
+            <span class="nav-label">Termine</span>
+            <span class="nav-sub">Kalender</span>
+        </a>
+
+        <a href="/protokoll_neu" class="nav-card c-green">
+            <span class="nav-icon"><i data-lucide="file-text" class="icon-lg"></i></span>
+            <span class="nav-label">Protokoll</span>
+            <span class="nav-sub">Sitzungen</span>
+        </a>
+
+        <a href="/event_planen/zeltlager" class="nav-card c-yellow">
+            <span class="nav-icon"><i data-lucide="tent-tree" class="icon-lg"></i></span>
+            <span class="nav-label">Zeltlager</span>
+            <span class="nav-sub">Planung & Programm</span>
+        </a>
+
+        <a href="/event_planen/kindertage" class="nav-card c-yellow">
+            <span class="nav-icon"><i data-lucide="school" class="icon-lg"></i></span>
+            <span class="nav-label">Kindertage</span>
+            <span class="nav-sub">Planung & Programm</span>
+        </a>
+
+        <a href="/spiele_datenbank" class="nav-card c-green">
+            <span class="nav-icon"><i data-lucide="database" class="icon-lg"></i></span>
+            <span class="nav-label">Spiele-DB</span>
+            <span class="nav-sub">Konzepte & Archiv</span>
+        </a>
+
+        {% if current_user.ist_admin or current_user.ist_kueche %}
+        <a href="{{ url_for('kueche.kueche') }}" class="nav-card c-green">
+            <span class="nav-icon"><i data-lucide="chef-hat" class="icon-lg"></i></span>
+            <span class="nav-label">Küche</span>
+            <span class="nav-sub">Rezepte & Listen</span>
+        </a>
+        {% endif %}
+
+        {% if current_user.ist_admin %}
+        <a href="{{ url_for('bloecke.bloecke_uebersicht') }}" class="nav-card c-yellow">
+            <span class="nav-icon"><i data-lucide="layout-list" class="icon-lg"></i></span>
+            <span class="nav-label">Programmblöcke</span>
+            <span class="nav-sub">Gruppenplanung</span>
+        </a>
+        {% endif %}
+
+    </div>
+
+    <!-- Meine Blöcke (für zugewiesene Leiter) -->
+    {% set offene_bloecke = meine_bloecke | selectattr('status', 'ne', 'uebernommen') | list %}
+    {% if offene_bloecke %}
+    <div class="section-heading">Meine Programmblöcke</div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
+        {% for block in offene_bloecke %}
+        <a href="{{ url_for('bloecke.block_detail', id=block.id) }}" class="card" style="text-decoration:none;display:block;">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+                <div>
+                    <div style="font-weight:600;color:var(--text-white);font-size:0.95rem;">{{ block.titel }}</div>
+                    <div class="text-muted text-sm">{{ block.tag | wochentag }}{% if block.zeit_von %} · {{ block.zeit_von }}{% if block.zeit_bis %}–{{ block.zeit_bis }}{% endif %} Uhr{% endif %} · {{ block.punkte | length }} Punkt(e)</div>
+                </div>
+                <span class="status-badge status-{{ block.status }}">
+                    {% if block.status == 'entwurf' %}Entwurf
+                    {% elif block.status == 'eingereicht' %}Eingereicht
+                    {% else %}Übernommen{% endif %}
+                </span>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Info-Board -->
+    <div class="section-heading">Info-Board</div>
+    <div class="card">
+        <form action="/info_speichern" method="POST" class="info-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="text" name="nachricht" placeholder="Kurze Info an alle..." required>
+            <button type="submit">Senden</button>
+        </form>
+
+        {% if infos %}
+        <div>
+            {% for info in infos %}
+            <div class="info-item">
+                <span class="info-text">{{ info.nachricht }}</span>
+                <span class="info-meta">
+                    {{ info.zeitstempel.strftime('%d.%m. %H:%M') if info.zeitstempel else '' }}
+                    <form action="/info_loeschen/{{ info.id }}" method="POST" style="display:inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="delete-info" title="Löschen" style="background:none;border:none;cursor:pointer;padding:0;">&times;</button>
+                    </form>
+                </span>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted text-sm">Noch keine Infos.</p>
+        {% endif %}
+    </div>
+
+    <div class="footer-links mt-3">
+        <a href="/passwort_aendern" class="text-muted text-sm"><i data-lucide="key" class="icon"></i> Passwort ändern</a>
+    </div>
+
+</div>
+{% endblock %}

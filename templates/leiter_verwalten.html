@@ -1,0 +1,124 @@
+{% extends "layout.html" %}
+{% block title %}Team verwalten – KLJB Litzendorf{% endblock %}
+
+{% block content %}
+<div class="main-content">
+
+    <a href="{{ url_for('admin.admin_konsole') }}" class="back-link">← Admin-Konsole</a>
+    <div class="page-title"><i data-lucide="user-pen" class="icon-lg"></i> Team verwalten</div>
+
+    <!-- Neuen Account anlegen -->
+    <div class="section-heading">Neuen Account anlegen</div>
+    <div class="card">
+        <form action="{{ url_for('admin.leiter_anlegen') }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+            <div class="form-group">
+                <label>Name</label>
+                <input type="text" name="name" placeholder="z.B. Max Mustermann" required>
+            </div>
+            <div class="form-group">
+                <label>Start-Passwort</label>
+                <input type="password" name="passwort" placeholder="Sicheres Passwort" required>
+            </div>
+            <div class="form-group">
+                <label>Rolle im System</label>
+                <select name="rolle">
+                    <option value="leiter">Normaler Gruppenleiter</option>
+                    <option value="kueche">Küchenteam</option>
+                    <option value="admin">Hauptverantwortlich (Admin)</option>
+                </select>
+            </div>
+
+            <button type="submit">Account anlegen</button>
+        </form>
+    </div>
+
+    <!-- Bestehendes Team -->
+    <div class="section-heading">Bestehendes Team</div>
+
+    {% set gruppe_admin  = leiter | selectattr('ist_admin')                                | list %}
+    {% set gruppe_kueche = leiter | rejectattr('ist_admin') | selectattr('ist_kueche')     | list %}
+    {% set gruppe_leiter = leiter | rejectattr('ist_admin') | rejectattr('ist_kueche')     | list %}
+
+    <div class="role-panels">
+
+        {% for gruppe, titel, current_rolle in [
+            (gruppe_leiter, 'Gruppenleiter',     'leiter'),
+            (gruppe_kueche, 'Küchenteam',        'kueche'),
+            (gruppe_admin,  'Hauptverantwortung', 'admin'),
+        ] %}
+        <details class="role-panel" open>
+            <summary>
+                <span>{{ titel }}</span>
+                <span class="badge badge-gray">{{ gruppe | length }}</span>
+                <span class="chevron">▸</span>
+            </summary>
+            <div class="role-panel-body">
+                {% if gruppe %}
+                {% for l in gruppe %}
+                <div class="team-item">
+                    <div class="team-name">
+                        {{ l.name }}
+                        {% if l.id == current_user.id %}
+                        <span class="text-muted text-sm">(du)</span>
+                        {% endif %}
+                        {% if l.muss_passwort_aendern %}
+                        <span class="badge badge-yellow" title="Hat Passwort noch nicht geändert">PW ausstehend</span>
+                        {% endif %}
+                        {% if l.ist_gesperrt %}
+                        <span class="badge badge-red" title="Account gesperrt wegen zu vieler Fehlversuche">Gesperrt</span>
+                        {% endif %}
+                    </div>
+                    <div class="team-actions">
+                        {% if l.id != current_user.id %}
+                        <form action="{{ url_for('admin.leiter_rolle_aendern', id=l.id) }}" method="POST" class="inline-form">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <select name="rolle" class="select-sm">
+                                <option value="leiter" {% if current_rolle == 'leiter' %}selected{% endif %}>Gruppenleiter</option>
+                                <option value="kueche" {% if current_rolle == 'kueche' %}selected{% endif %}>Küchenteam</option>
+                                <option value="admin"  {% if current_rolle == 'admin'  %}selected{% endif %}>Hauptverantwortlich</option>
+                            </select>
+                            <button type="submit" class="btn btn-secondary btn-sm btn-xs" title="Rolle speichern">
+                                <i data-lucide="check" class="icon"></i>
+                            </button>
+                        </form>
+                        {% endif %}
+                        {% if l.ist_gesperrt %}
+                        <form action="{{ url_for('admin.leiter_entsperren', id=l.id) }}" method="POST" class="inline-form">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-warning btn-sm btn-xs" title="Entsperren">
+                                <i data-lucide="lock-open" class="icon"></i>
+                            </button>
+                        </form>
+                        {% endif %}
+                        <form action="{{ url_for('admin.passwort_reset', id=l.id) }}" method="POST"
+                              onsubmit="return confirm('Passwort zurücksetzen?')" class="inline-form">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-secondary btn-sm btn-xs" title="Passwort zurücksetzen">
+                                <i data-lucide="key-round" class="icon"></i>
+                            </button>
+                        </form>
+                        {% if l.id != current_user.id %}
+                        <form action="{{ url_for('admin.leiter_loeschen', id=l.id) }}" method="POST"
+                              onsubmit="return confirm('Leiter wirklich löschen?')" class="inline-form">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-danger btn-sm btn-xs" title="Löschen">
+                                <i data-lucide="trash" class="icon"></i>
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <p class="text-muted text-sm" style="padding:10px 0;">Niemand in dieser Gruppe.</p>
+                {% endif %}
+            </div>
+        </details>
+        {% endfor %}
+
+    </div>
+
+</div>
+{% endblock %}

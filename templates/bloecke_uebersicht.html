@@ -1,0 +1,75 @@
+{% extends "layout.html" %}
+{% block title %}Programmblöcke – KLJB Litzendorf{% endblock %}
+
+{% block content %}
+<div class="main-content">
+
+    <a href="/" class="back-link">← Startseite</a>
+    <div class="page-title"><i data-lucide="layout-list" class="icon-lg"></i> Programmblöcke</div>
+
+    {% if current_user.ist_admin %}
+    <!-- Event-Auswahl -->
+    <div class="card mb-2">
+        <div class="card-title">Event auswählen</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+            {% for t in alle_termine %}
+            <a href="{{ url_for('bloecke.bloecke_fuer_event', termin_id=t.id) }}"
+               class="btn {% if event and event.id == t.id %}btn-primary{% else %}btn-secondary{% endif %} btn-sm">
+                {{ t.name }} ({{ t.start.strftime('%d.%m.%Y') if t.start else '?' }})
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+
+    {% if event %}
+    <div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
+        <a href="{{ url_for('bloecke.block_neu', termin_id=event.id) }}" class="btn btn-primary btn-sm">
+            <i data-lucide="plus" class="icon"></i> Neuer Block
+        </a>
+    </div>
+    {% endif %}
+    {% endif %}
+
+    {% if bloecke %}
+    <div style="display:flex;flex-direction:column;gap:12px;">
+        {% for block in bloecke %}
+        <a href="{{ url_for('bloecke.block_detail', id=block.id) }}" class="card" style="text-decoration:none;display:block;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;">
+                <div>
+                    <div class="card-title" style="margin-bottom:4px;">{{ block.titel }}</div>
+                    <div class="text-muted text-sm">
+                        <i data-lucide="calendar" class="icon"></i> {{ block.tag | wochentag }}
+                        {% if block.zeit_von %} · {{ block.zeit_von }}{% if block.zeit_bis %}–{{ block.zeit_bis }}{% endif %} Uhr{% endif %}
+                        · {{ block.punkte | length }} Punkt(e)
+                    </div>
+                    {% if block.zugewiesene_leiter %}
+                    <div class="text-muted text-sm" style="margin-top:4px;">
+                        <i data-lucide="users" class="icon"></i>
+                        {{ block.zugewiesene_leiter | map(attribute='name') | join(', ') }}
+                    </div>
+                    {% endif %}
+                </div>
+                <span class="status-badge status-{{ block.status }}">
+                    {% if block.status == 'entwurf' %}<i data-lucide="pencil" class="icon"></i> Entwurf
+                    {% elif block.status == 'eingereicht' %}<i data-lucide="send" class="icon"></i> Eingereicht
+                    {% else %}<i data-lucide="check-circle" class="icon"></i> Übernommen
+                    {% endif %}
+                </span>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card">
+        <p class="text-muted text-sm">
+            {% if current_user.ist_admin %}
+            Noch keine Blöcke für dieses Event.
+            {% else %}
+            Dir wurden noch keine Programmblöcke zugewiesen.
+            {% endif %}
+        </p>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

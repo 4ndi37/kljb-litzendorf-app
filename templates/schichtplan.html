@@ -1,0 +1,48 @@
+{% extends "layout.html" %}
+{% block title %}Schichtplan – KLJB Litzendorf{% endblock %}
+
+{% block content %}
+<div class="main-content">
+
+    <a href="/" class="back-link">← Startseite</a>
+    <div class="page-title"><i data-lucide="calendar" class="icon-lg"></i> Schichtplan</div>
+
+    <div class="card">
+        {% if schichten %}
+        {% for schicht in schichten %}
+        <div class="schicht-row">
+            <div class="schicht-info">
+                <div class="schicht-name">{{ schicht.event_name }}</div>
+                <div class="schicht-meta">{{ schicht.datum.strftime('%d.%m.%Y') }} · {{ schicht.uhrzeit }}</div>
+            </div>
+
+            {% if schicht.leiter_id == none %}
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <span class="schicht-free">● Frei</span>
+                    <form action="/schicht_uebernehmen/{{ schicht.id }}" method="POST" style="display:inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                        <button type="submit" class="btn btn-primary btn-sm">Eintragen</button>
+                    </form>
+                </div>
+
+            {% elif schicht.leiter_id == current_user.id %}
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <span class="schicht-mine"><i data-lucide="dot" class="icon"></i> {{ schicht.besitzer.name }}</span>
+                    <form action="/schicht_abgeben/{{ schicht.id }}" method="POST" style="display:inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                        <button type="submit" class="btn btn-secondary btn-sm">Austragen</button>
+                    </form>
+                </div>
+
+            {% else %}
+                <span class="schicht-taken">{{ schicht.besitzer.name }}</span>
+            {% endif %}
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="text-muted text-sm">Aktuell keine Schichten geplant.</p>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

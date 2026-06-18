@@ -1,0 +1,114 @@
+<!--- MIT GEMINI --->
+{% extends "layout.html" %}
+{% block title %}Programm planen – KLJB Litzendorf{% endblock %}
+
+{% block content %}
+<div class="main-content">
+
+    <a href="/programm" class="back-link">← Zum Programm</a>
+    <div class="page-title"><i data-lucide="clipboard-list" class="icon-lg"></i> Tagesablauf planen</div>
+
+    <div class="card">
+        <form action="/programm_speichern" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+            <div class="form-group">
+                <label>Tag</label>
+                <select name="tag" id="tag-select" required disabled>
+                    <option value="" disabled selected>– erst Veranstaltung wählen –</option>
+                </select>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Startzeit</label>
+                    <input type="time" name="uhrzeit" required>
+                </div>
+                <div class="form-group">
+                    <label>Ende (optional)</label>
+                    <input type="time" name="ende">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Kategorie</label>
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px;">
+                    {% set kategorien = [
+                        ('spiel',       'gamepad-2',    'Spiel'),
+                        ('essen',       'utensils',     'Essen'),
+                        ('getraenke',   'cup-soda',     'Getränke'),
+                        ('freizeit',    'beer',         'Freizeit'),
+                        ('aufbau',      'hammer',       'Aufbau'),
+                        ('gottesdienst','church',       'Kirche'),
+                        ('reflexion',   'brain',        'Reflexion'),
+                        ('sonstiges',   'file-text',    'Sonstiges'),
+                    ] %}
+                    {% for val, icon, label in kategorien %}
+                    <label style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 6px;text-align:center;cursor:pointer;font-size:0.8rem;">
+                        <input type="radio" name="kategorie" value="{{ val }}" onclick="showSection('{{ 'spiel' if val=='spiel' else 'custom' if val in ['aufbau','sonstiges'] else 'simple' }}')" required style="display:none;">
+                        <div><i data-lucide="{{ icon }}" class="icon"></i></div>
+                        <div>{{ label }}</div>
+                    </label>
+                    {% endfor %}
+
+                </div>
+            </div>
+
+            <div id="sec-spiel" class="form-group" style="display:none;">
+                <label>Spiel aus der Datenbank</label>
+                <select name="konzept_id">
+                    {% for k in konzept_liste %}
+                    <option value="{{ k.id }}">{{ k.titel }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div id="sec-custom" class="form-group" style="display:none;">
+                <label>Titel / Bezeichnung</label>
+                <input type="text" name="titel_direkt" placeholder="z.B. Zelte abbauen">
+            </div>
+
+            <div id="sec-info" class="form-group" style="display:none;">
+                <label>Optionaler Titel</label>
+                <input type="text" name="titel_optional" placeholder="z.B. Spaghetti Bolo (optional)">
+            </div>
+
+            <div class="form-group">
+                <label>Veranstaltung</label>
+                {% if relevante_events %}
+                <select name="event_id_hidden" id="event-select" required onchange="updateTage(this)">
+                    <option value="" disabled selected>-- Termin wählen --</option>
+                    {% for e in relevante_events %}
+                    <option value="{{ e.id }}">{{ e.name }} ({{ e.start.strftime('%d.%m.%Y') }})</option>
+                    {% endfor %}
+                </select>
+                {% else %}
+                <p style="color:var(--text-muted);font-size:0.9rem;">Kein Zeltlager- oder Kindertage-Termin vorhanden. Erst unter <a href="/termine">Termine</a> anlegen.</p>
+                <input type="hidden" name="event_id_hidden" value="">
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label>Verantwortliche Gruppenleiter</label>
+                <div id="ms-leiter" class="ms-container"></div>
+            </div>
+
+            <button type="submit">Im Plan speichern</button>
+        </form>
+    </div>
+
+</div>
+
+<script>const EVENT_TAGE = {{ event_tage | tojson }};</script>
+<script src="{{ url_for('static', filename='js/multi_select.js') }}"></script>
+<script>
+(function() {
+    const opts = [
+        {% for l in leiter_liste %}{"id": {{ l.id }}, "name": {{ l.name | tojson }}}{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+    window.leiterMs = new MultiSelect('ms-leiter', opts, 'leiter_ids', 'Name tippen...');
+})();
+</script>
+<script src="{{ url_for('static', filename='js/programm_erstellen.js') }}"></script>
+{% endblock %}

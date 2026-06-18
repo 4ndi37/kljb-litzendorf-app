@@ -1,0 +1,11 @@
+key.env
+*.db
+*.bak
+venv/
+__pycache__/
+*.pyc
+app.log
+*.log
+ngrok
+ngrok-v3*
+protokoll.json

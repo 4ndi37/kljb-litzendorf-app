@@ -1,0 +1,56 @@
+{% extends "layout.html" %}
+{% block title %}Spiele-Datenbank – KLJB Litzendorf{% endblock %}
+
+{% block content %}
+<div class="main-content">
+
+    <a href="/" class="back-link">← Startseite</a>
+    <div class="flex-between mb-2">
+        <div class="page-title" style="margin-bottom:0;"><i data-lucide="database" class="icon-lg"></i> Spiele & Konzepte</div>
+        <a href="/konzept_neu" class="btn btn-primary btn-sm"><i data-lucide="plus" class="icon"></i> Neues Konzept</a>
+    </div>
+
+    {% if konzepte %}
+    {% for k in konzepte %}
+    <div class="card">
+        <div class="flex-between mb-1">
+            <div class="konzept-titel">{{ k.titel }}</div>
+            {% if current_user.ist_admin %}
+            <form action="{{ url_for('konzepte.konzept_loeschen', id=k.id) }}" method="POST"
+                  onsubmit="return confirm('Konzept wirklich löschen?')" style="display:inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-danger btn-sm">Löschen</button>
+            </form>
+            {% endif %}
+        </div>
+
+        {% if k.beschreibung %}
+        <p class="text-muted text-sm mb-1">{{ k.beschreibung }}</p>
+        {% endif %}
+
+        {% if k.material %}
+        <p class="text-sm mb-1"><i data-lucide="briefcase" class="icon"></i> <span class="text-muted">Material:</span> {{ k.material }}</p>
+        {% endif %}
+        {% if k.autoren %}
+        <p class="text-sm mb-1"><i data-lucide="user" class="icon"></i> <span class="text-muted">Erstellt von:</span> {{ k.autoren | map(attribute='name') | join(', ') }}</p>
+        {% endif%}
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">
+            {% set termine_namen = einsaetze_pro_konzept.get(k.id, []) %}
+            {% if termine_namen %}
+                {% for name in termine_namen %}
+                <span class="badge badge-gray">{{ name }}</span>
+                {% endfor %}
+            {% else %}
+                <span class="text-muted text-sm">Noch nie gespielt</span>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="card">
+        <p class="text-muted text-sm">Die Datenbank ist leer. Füge dein erstes Konzept hinzu!</p>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

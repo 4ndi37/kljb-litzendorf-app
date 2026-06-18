@@ -1,0 +1,75 @@
+{% extends "layout.html" %}
+{% block title %}Neuer Programmblock – KLJB Litzendorf{% endblock %}
+
+{% block content %}
+<div class="main-content">
+
+    <a href="{{ url_for('bloecke.bloecke_fuer_event', termin_id=event.id) }}" class="back-link">← Zurück zur Übersicht</a>
+    <div class="page-title"><i data-lucide="plus-circle" class="icon-lg"></i> Neuer Programmblock</div>
+
+    <div class="card text-muted text-sm" style="margin-bottom:14px;">
+        Event: <strong class="text-white">{{ event.name }}</strong>
+        ({{ event.start.strftime('%d.%m.%Y') if event.start else '?' }}{% if event.ende %} – {{ event.ende.strftime('%d.%m.%Y') }}{% endif %})
+    </div>
+
+    <div class="card">
+        <form action="{{ url_for('bloecke.block_speichern') }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="termin_id" value="{{ event.id }}">
+
+            <div class="form-group">
+                <label>Titel <span style="color:var(--danger)">*</span></label>
+                <input type="text" name="titel" placeholder='z.B. "Actiontag Mittwoch"' required>
+            </div>
+
+            <div class="form-group">
+                <label>Auftrag / Beschreibung <span class="text-muted text-sm">(optional)</span></label>
+                <textarea name="beschreibung" placeholder="Was soll die Gruppe planen? Thema, Vorgaben, Hinweise..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Tag <span style="color:var(--danger)">*</span></label>
+                <select name="tag" required>
+                    <option value="">– Wochentag wählen –</option>
+                    {% for tag in wochentage %}
+                    <option value="{{ tag }}">{{ tag | wochentag }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                <div class="form-group" style="flex:1;min-width:120px;">
+                    <label>Zeitraum von <span class="text-muted text-sm">(optional)</span></label>
+                    <input type="time" name="zeit_von">
+                </div>
+                <div class="form-group" style="flex:1;min-width:120px;">
+                    <label>bis</label>
+                    <input type="time" name="zeit_bis">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Zugewiesene Leiter</label>
+                <div id="ms-leiter" class="ms-container"></div>
+            </div>
+
+            <div style="display:flex;gap:10px;margin-top:8px;">
+                <button type="submit" class="btn btn-primary">Block anlegen</button>
+                <a href="{{ url_for('bloecke.bloecke_fuer_event', termin_id=event.id) }}" class="btn btn-secondary">Abbrechen</a>
+            </div>
+        </form>
+    </div>
+
+</div>
+
+<script src="{{ url_for('static', filename='js/multi_select.js') }}"></script>
+<script>
+(function() {
+    const opts = [
+        {% for l in alle_leiter %}{"id": {{ l.id }}, "name": {{ l.name | tojson }}}{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+    window.leiterMs = new MultiSelect('ms-leiter', opts, 'leiter_ids', 'Name tippen...');
+})();
+</script>
+{% endblock %}

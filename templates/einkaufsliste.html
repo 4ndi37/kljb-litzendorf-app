@@ -1,0 +1,89 @@
+{% extends "layout.html" %}
+{% block title %}Einkaufsliste – KLJB Litzendorf{% endblock %}
+
+{% block content %}
+<div class="main-content">
+
+    <a href="{{ url_for('kueche.kueche') }}" class="back-link">← Küche</a>
+    <div class="page-title"><i data-lucide="square-pen" class="icon-lg"></i> Einkaufsliste erstellen</div>
+
+    <div class="card">
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Anzahl Kinder</label>
+                    <input type="number" name="kinder" min="0" value="0" required>
+                </div>
+                <div class="form-group">
+                    <label>Anzahl Gruppenleiter</label>
+                    <input type="number" name="leiter" min="0" value="0" required>
+                </div>
+            </div>
+
+            <div class="section-heading">Rezepte auswählen</div>
+            {% if rezepte %}
+            {% for r in rezepte %}
+            <label class="checkbox-label" style="padding:6px 0;border-bottom:1px solid var(--border);">
+                <input type="checkbox" name="rezept_ids" value="{{ r.id }}">
+                <span>{{ r.name }} <span class="text-muted text-sm">· {{ r.standard_personen }} Pers.</span></span>
+            </label>
+            {% endfor %}
+            {% else %}
+            <p class="text-muted text-sm">Keine Rezepte vorhanden. Erst Rezepte in der Küche anlegen.</p>
+            {% endif %}
+
+            <button type="submit" style="margin-top:14px;">Einkaufsliste berechnen</button>
+        </form>
+    </div>
+
+    {% if einkaufsliste %}
+    <div class="section-heading">Ergebnis für {{ personen }} Personen</div>
+
+    <div class="card" style="padding:0;overflow:hidden;">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Rezept</th>
+                    <th>Zutat</th>
+                    <th>Menge</th>
+                    <th>Einheit</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for eintrag in einkaufsliste %}
+                <tr>
+                    <td class="text-muted text-sm">{{ eintrag.rezept }}</td>
+                    <td>{{ eintrag.zutat }}</td>
+                    <td><strong>{{ eintrag.menge }}</strong></td>
+                    <td>{{ eintrag.einheit }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card mt-2">
+        <form action="{{ url_for('kueche.einkaufsliste_speichern') }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <input type="hidden" name="personen" value="{{ personen }}">
+            <input type="hidden" name="eintraege_anzahl" value="{{ einkaufsliste|length }}">
+            {% for eintrag in einkaufsliste %}
+            <input type="hidden" name="rezept_{{ loop.index0 }}" value="{{ eintrag.rezept }}">
+            <input type="hidden" name="zutat_{{ loop.index0 }}"  value="{{ eintrag.zutat }}">
+            <input type="hidden" name="menge_{{ loop.index0 }}"  value="{{ eintrag.menge }}">
+            <input type="hidden" name="einheit_{{ loop.index0 }}" value="{{ eintrag.einheit }}">
+            {% endfor %}
+
+            <div class="form-group">
+                <label>Name der Liste speichern</label>
+                <input type="text" name="liste_name" placeholder='z.B. "Zeltlager 2026"' required>
+            </div>
+            <button type="submit"><i data-lucide="file-text" class="icon"></i> Liste speichern</button>
+        </form>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

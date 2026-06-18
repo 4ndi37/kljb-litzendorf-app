@@ -1,0 +1,75 @@
+{% extends "layout.html" %}
+{% block title %}Küche – KLJB Litzendorf{% endblock %}
+
+{% block content %}
+<div class="main-content">
+
+    <a href="/" class="back-link">← Startseite</a>
+    <div class="page-title"><i data-lucide="chef-hat" class="icon-lg"></i> Küche</div>
+
+    <div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;">
+        <a href="{{ url_for('kueche.einkaufsliste') }}" class="btn btn-primary"><i data-lucide="list-plus" class="icon"></i> Neue Einkaufsliste</a>
+        <a href="{{ url_for('kueche.alle_einkaufslisten') }}" class="btn btn-secondary"><i data-lucide="archive" class="icon"></i> Archiv</a>
+    </div>
+
+    <!-- Rezepte -->
+    <div class="section-heading">Rezepte</div>
+    {% if rezepte %}
+    {% for r in rezepte %}
+    <details>
+        <summary>{{ r.name }} <span class="text-muted text-sm">· {{ r.standard_personen }} Personen</span></summary>
+        <div>
+            {% if r.beschreibung %}<p class="text-muted text-sm mb-2">{{ r.beschreibung }}</p>{% endif %}
+            {% for z in r.zutaten %}
+            <div class="rezept-item">
+                <span class="rezept-name">{{ z.name }}</span>
+                <span class="rezept-meta">{{ z.menge }} {{ z.einheit }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </details>
+    {% endfor %}
+    {% else %}
+    <div class="card">
+        <p class="text-muted text-sm">Noch keine Rezepte vorhanden.</p>
+    </div>
+    {% endif %}
+
+    <!-- Neues Rezept -->
+    <div class="section-heading">Neues Rezept hinzufügen</div>
+    <div class="card">
+        <form action="{{ url_for('kueche.rezept_speichern') }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+            <div class="form-group">
+                <label>Name</label>
+                <input type="text" name="name" required>
+            </div>
+            <div class="form-group">
+                <label>Beschreibung (optional)</label>
+                <textarea name="beschreibung"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Standardmenge für wie viele Personen?</label>
+                <input type="number" name="standard_personen" value="10" min="1" required>
+            </div>
+
+            <div class="section-heading" style="margin-top:14px;">Zutaten</div>
+            <div id="zutaten-container">
+                <div class="zutat-zeile form-row" style="margin-bottom:8px;">
+                    <input type="text"   name="zutat_name"   placeholder="Zutat" required>
+                    <input type="number" name="zutat_menge"  placeholder="Menge" step="0.1" required>
+                    <input type="text"   name="zutat_einheit" placeholder="g / ml / Stück" required style="max-width:120px;">
+                </div>
+            </div>
+
+            <button type="button" class="btn btn-secondary btn-sm mb-2" onclick="zutatHinzufuegen()">+ Zutat</button>
+            <br>
+            <button type="submit">Rezept speichern</button>
+        </form>
+    </div>
+
+</div>
+
+<script src="{{ url_for('static', filename='js/kueche.js') }}"></script>
+{% endblock %}

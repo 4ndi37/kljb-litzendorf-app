@@ -1,0 +1,36 @@
+{% extends "layout.html" %}
+{% block title %}Admin-Konsole – KLJB Litzendorf{% endblock %}
+
+{% block content %}
+<div class="main-content">
+
+    <a href="/" class="back-link">← Startseite</a>
+    <div class="page-title"><i data-lucide="settings" class="icon-lg"></i> Admin-Konsole</div>
+
+    <!-- Verwaltung -->
+    <div class="section-heading">Verwaltung</div>
+    <div class="admin-grid">
+        <a href="{{ url_for('admin.leiter_verwalten') }}" class="admin-card">
+            <h3><i data-lucide="users" class="icon"></i> Team</h3>
+            <p>Accounts verwalten</p>
+        </a>
+        <a href="{{ url_for('admin.schichtplan_admin') }}" class="admin-card">
+            <h3><i data-lucide="clipboard-list" class="icon"></i> Schichtplan</h3>
+            <p>Generieren & Löschen</p>
+        </a>
+        <a href="/programm" class="admin-card">
+            <h3><i data-lucide="file-text" class="icon"></i> Programm</h3>
+            <p>Ablauf & Spiele</p>
+        </a>
+        <a href="{{ url_for('programm.programm_archiv') }}" class="admin-card">
+            <h3><i data-lucide="archive" class="icon"></i> Archiv</h3>
+            <p>Vergangene Zeitpläne</p>
+        </a>
+        <a href="/todos" class="admin-card">
+            <h3><i data-lucide="list-todo" class="icon"></i> Aufgaben</h3>
+            <p>Übersicht aller Leiter</p>
+        </a>
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,167 @@
+<!--- Diese Seite wurde mit Hilfe von GEMINI programmiert -->
+{% extends "layout.html" %}
+{% block title %}Planung: {{ event_typ | capitalize }} – KLJB Litzendorf{% endblock %}
+
+{% block content %}
+<div class="main-content">
+
+    <a href="/" class="back-link">← Startseite</a>
+    <div class="page-title">
+        {% if event_typ == 'zeltlager' %}<i data-lucide="tree-tent" class="icon-lg"></i>{% else %}<i data-lucide="school" class="icon-lg"></i>{% endif %}
+        Planung: {{ event_typ | capitalize }}
+    </div>
+
+    {% if not event %}
+    <div class="card">
+        <div class="card-title">Noch kein Termin angelegt</div>
+        <p class="text-muted text-sm mb-2">
+            Es wurde noch kein Termin für <strong>{{ event_typ | capitalize }}</strong> angelegt.
+            Erstelle einen Termin und wähle dort den richtigen Typ aus.
+        </p>
+        <a href="/termine" class="btn btn-primary"><i data-lucide="calendar" class="icon"></i> Termin jetzt anlegen</a>
+    </div>
+
+    {% else %}
+
+    <!-- Event Info -->
+    <div class="card mb-2">
+        <div class="card-title">{{ event.name }}</div>
+        <div class="text-muted text-sm">
+            <i data-lucide="calendar" class="icon"></i> {{ event.start.strftime('%d.%m.%Y') }}{% if event.ende %} – {{ event.ende.strftime('%d.%m.%Y') }}{% endif %}
+            {% if event.ort %} · <i data-lucide="map-pin" class="icon"></i> {{ event.ort }}{% endif %}
+        </div>
+    </div>
+
+    <!-- Anwesenheit -->
+    <div class="section-heading">Bist du dabei?</div>
+    <div class="card">
+        {% if meine_anwesenheit %}
+        <div class="alert alert-info" style="margin-bottom:12px;">
+            Deine Antwort:
+            <strong>
+                {% if meine_anwesenheit.status == 'voll' %}<i data-lucide="check" class="icon"></i> Komplett dabei
+                {% elif meine_anwesenheit.status == 'gar_nicht' %}<i data-lucide="ban" class="icon"></i> Nicht dabei
+                {% else %}<i data-lucide="clock-fading" class="icon"></i> Teilweise – {{ meine_anwesenheit.bemerkung }}
+                {% endif %}
+            </strong>
+        </div>
+        {% endif %}
+
+        <form action="/anwesenheit_speichern" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <input type="hidden" name="termin_id"     value="{{ event.id }}">
+            <input type="hidden" name="typ_redirect"  value="{{ event_typ }}">
+
+            <div style="display:flex;flex-direction:column;gap:10px;">
+                <label class="checkbox-label">
+                    <input type="radio" name="status" value="voll" onclick="toggleBemerkung('voll')" required>
+                    <i data-lucide="check" class="icon"></i> Ich bin von Anfang bis Ende dabei
+                </label>
+                <label class="checkbox-label">
+                    <input type="radio" name="status" value="teilweise" onclick="toggleBemerkung('teilweise')">
+                    <i data-lucide="clock-fading" class="icon"></i> Ich bin nur teilweise da
+                </label>
+                <div id="bemerkung_container" style="display:none;">
+                    <input type="text" id="bemerkung_input" name="bemerkung" placeholder="z.B. erst ab Mittwoch...">
+                </div>
+                <label class="checkbox-label">
+                    <input type="radio" name="status" value="gar_nicht" onclick="toggleBemerkung('gar_nicht')">
+                    <i data-lucide="ban" class="icon"></i> Ich kann leider gar nicht
+                </label>
+            </div>
+
+            <button type="submit" style="margin-top:14px;">Abstimmung speichern</button>
+        </form>
+    </div>
+
+    <!-- Anwesenheitsübersicht -->
+    <div class="section-heading">Wer ist dabei?</div>
+    <details>
+        <summary>Übersicht anzeigen ({{ alle_anwesenheiten | length }} Antworten)</summary>
+        <div>
+            {%if alle_anwesenheiten %}
+            {%for a in alle_anwesenheiten %}
+            <div class="list-item">
+                <div>
+                    <strong class="text-white">{{ a.leiter.name }}</strong>
+                    <div class="text-muted text-sm">
+                        {% if a.status =='voll' %}<i data-lucide="check" class="icon"></i> Komplett dabei
+                        {% elif a.status == 'gar_nicht' %}<i data-lucide="ban" class="icon"></i> Nicht dabei
+                        {% else %}<i data-lucide="clock-fading" class="icon"></i> Teilweise – {{ a.bemerkung }}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <p class="text-muted text-sm"> Noch keine Antworten.</p>
+            {% endif %}
+        </div>
+    </details>
+
+    <!-- Programmblöcke -->
+    {% if current_user.ist_admin %}
+    <div class="section-heading">Programmblöcke</div>
+    <div class="card mb-2">
+        <p class="text-muted text-sm" style="margin-bottom:10px;">Delegiere Teile des Programms an Gruppen – sie planen selbst und reichen ein.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <a href="{{ url_for('bloecke.bloecke_fuer_event', termin_id=event.id) }}" class="btn btn-secondary btn-sm">
+                <i data-lucide="layout-list" class="icon"></i> Alle Blöcke anzeigen
+            </a>
+            <a href="{{ url_for('bloecke.block_neu', termin_id=event.id) }}" class="btn btn-primary btn-sm">
+                <i data-lucide="plus" class="icon"></i> Neuer Block
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Zeitplan -->
+    <div class="section-heading flex-between" style="display:flex;align-items:center;">
+        <span>Zeitplan</span>
+        {% if current_user.ist_admin %}
+        <a href="/programm_neu" class="btn btn-secondary btn-sm"><i data-lucide="square-pen" class="icon"></i> Bearbeiten</a>
+        {% endif %}
+    </div>
+
+    {% set has_plan = namespace(value=false) %}
+    {% for tag in wochentage %}{% if wochen_plan[tag] %}{% set has_plan.value = true %}{% endif %}{% endfor %}
+
+    {% if has_plan.value %}
+    {% for tag in wochentage %}
+    {% if wochen_plan[tag] %}
+    <details>
+        <summary>
+            {{ tag | wochentag }}
+            <a href="/packliste/{{ event.id }}/{{ tag }}" class="btn btn-secondary btn-sm" style="margin-right:24px;" onclick="event.stopPropagation()"><i data-lucide="briefcase" class="icon"></i> Packliste</a>
+        </summary>
+        <div>
+            {% for punkt in wochen_plan[tag] %}
+            <div class="programm-item">
+                <div class="programm-time">{{ punkt.uhrzeit }}<br><span style="font-size:0.7rem;">–{{ punkt.ende }}</span></div>
+                <div>
+                    <div class="programm-name">
+                        {% if punkt.kategorie == 'spiel' and punkt.konzept_info %}
+                        <i data-lucide="balloon" class="icon"></i> {{ punkt.konzept_info.titel }}
+                        {% else %}
+                        {{ punkt.custom_titel }}
+                        {% endif %}
+                    </div>
+                    {% if punkt.verantwortliche %}
+                    <div class="programm-meta"><i data-lucide="users" class="icon"></i> {{ punkt.verantwortliche }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </details>
+    {% endif %}
+    {% endfor %}
+    {% else %}
+    <p class="text-muted text-sm">Noch keine Programmpunkte eingetragen.</p>
+    {% endif %}
+
+    {% endif %}
+</div>
+
+<script src="{{ url_for('static', filename='js/event_planen.js') }}"></script>
+{% endblock %}

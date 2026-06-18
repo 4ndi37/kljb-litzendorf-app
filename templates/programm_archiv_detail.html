@@ -1,0 +1,64 @@
+{% extends "layout.html" %}
+{% block title %}{{ event.name }} – Archiv – KLJB Litzendorf{% endblock %}
+
+{% block content %}
+<div class="main-content">
+
+    <a href="{{ url_for('programm.programm_archiv') }}" class="back-link">← Zurück zum Archiv</a>
+    <div class="page-title"><i data-lucide="archive" class="icon-lg"></i> {{ event.name }}</div>
+
+    <div class="card mb-2" style="padding:12px 16px;">
+        <div class="text-muted text-sm" style="display:flex;flex-wrap:wrap;gap:16px;">
+            <span><i data-lucide="calendar" class="icon"></i>
+                {{ event.start.strftime('%d.%m.%Y') }} – {{ event.ende.strftime('%d.%m.%Y') }}
+            </span>
+            {% if event.ort %}
+            <span><i data-lucide="map-pin" class="icon"></i> {{ event.ort }}</span>
+            {% endif %}
+        </div>
+    </div>
+
+    {% set has_content = namespace(value=false) %}
+    {% for tag in wochen_plan %}{% if wochen_plan[tag] %}{% set has_content.value = true %}{% endif %}{% endfor %}
+
+    {% if has_content.value %}
+    {% for tag in wochen_plan %}
+    {% if wochen_plan[tag] %}
+    <details open>
+        <summary>{{ tag | wochentag }}</summary>
+        <div>
+            {% for punkt in wochen_plan[tag] %}
+            <div class="programm-item">
+                <div class="programm-time">{{ punkt.uhrzeit }}<br><span style="font-size:0.7rem;">–{{ punkt.ende }}</span></div>
+                <div style="flex:1;">
+                    <div class="programm-name">
+                        {% if punkt.kategorie == 'spiel' and punkt.konzept_info %}
+                        <i data-lucide="gamepad-2" class="icon"></i> {{ punkt.konzept_info.titel }}
+                        {% else %}
+                        {% if punkt.kategorie == 'essen' %}<i data-lucide="utensils" class="icon"></i>
+                        {% elif punkt.kategorie == 'freizeit' %}<i data-lucide="beer" class="icon"></i>
+                        {% elif punkt.kategorie == 'gottesdienst' %}<i data-lucide="church" class="icon"></i>
+                        {% elif punkt.kategorie == 'reflexion' %}<i data-lucide="brain" class="icon"></i>
+                        {% elif punkt.kategorie == 'getraenke' %}<i data-lucide="cup-soda" class="icon"></i>
+                        {% endif %}
+                        {{ punkt.custom_titel }}
+                        {% endif %}
+                    </div>
+                    {% if punkt.verantwortliche %}
+                    <div class="programm-meta"><i data-lucide="user" class="icon"></i> {{ punkt.verantwortliche }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </details>
+    {% endif %}
+    {% endfor %}
+    {% else %}
+    <div class="card">
+        <p class="text-muted text-sm">Für dieses Event wurden keine Programmpunkte eingetragen.</p>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}KLJB Litzendorf{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="icon" href="/static/icons/icon-192.png" type="image/png">
+    {% block head %}{% endblock %}
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="theme-color" content="#4a9e5c">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="vapid-public-key" content="{{ config.get('VAPID_PUBLIC_KEY', '') }}">
+    <script src="{{ url_for('static', filename='js/lucide.min.js') }}"></script>
+</head>
+<body>
+
+{% if current_user.is_authenticated %}
+<header class="app-header">
+    <span class="logo">KLJB Litzendorf</span>
+    <div class="header-right">
+        <strong>{{ current_user.name }}</strong>
+        {% if current_user.ist_admin %}<span class="admin-badge">Admin</span>{% endif %}
+        <a href="{{ url_for('auth.logout') }}" class="logout-link">Abmelden</a>
+    </div>
+</header>
+{% endif %}
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="main-content" style="padding-bottom:0; padding-top:12px;">
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+{% endwith %}
+
+{% block content %}{% endblock %}
+
+<script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js');
+    }
+</script>
+<script>lucide.createIcons();</script>
+
+{% if current_user.is_authenticated %}
+<div id="push-banner" style="display:none; position:fixed; bottom:0; left:0; right:0; background:#4a9e5c; color:white; padding:12px 16px; align-items:center; justify-content:space-between; gap:12px; z-index:1000; box-shadow:0 -2px 8px rgba(0,0,0,.2);">
+    <span style="font-size:14px;">Benachrichtigungen aktivieren?</span>
+    <div style="display:flex; gap:8px; flex-shrink:0;">
+        <button id="push-enable-btn" style="background:white; color:#4a9e5c; border:none; padding:6px 14px; border-radius:6px; cursor:pointer; font-weight:600; font-size:14px;">Aktivieren</button>
+        <button id="push-dismiss-btn" style="background:transparent; color:white; border:1px solid rgba(255,255,255,.6); padding:6px 14px; border-radius:6px; cursor:pointer; font-size:14px;">Nein danke</button>
+    </div>
+</div>
+<script src="{{ url_for('static', filename='js/push.js') }}"></script>
+{% endif %}
+</body>
+</html>

@@ -1,0 +1,51 @@
+{% extends "layout.html" %}
+{% block title %}Packliste {{ tag | wochentag }} – KLJB Litzendorf{% endblock %}
+
+{% block content %}
+<div class="main-content">
+
+    <a href="/programm" class="back-link no-print">← Zum Zeitplan</a>
+    <div class="flex-between mb-2">
+        <div class="page-title" style="margin-bottom:0;"><i data-lucide="briefcase" class="icon-lg"></i> Packliste: {{ tag | wochentag }}</div>
+        <button onclick="window.print()" class="btn btn-secondary btn-sm no-print"><i data-lucide="printer" class="icon"></i> Drucken</button>
+    </div>
+
+    {% if materialien %}
+    <div class="card" style="padding:0;overflow:hidden;">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Uhrzeit</th>
+                    <th>Spiel / Aktivität</th>
+                    <th>Material</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in materialien %}
+                <tr>
+                    <td class="text-muted text-sm">{{ m.zeit }}</td>
+                    <td><strong>{{ m.spiel }}</strong></td>
+                    <td>{{ m.sachen }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="card">
+        <p class="text-muted text-sm"><i data-lucide="check" class="icon"></i> Für {{ tag | wochentag }} ist kein spezielles Material hinterlegt.</p>
+    </div>
+    {% endif %}
+
+</div>
+
+<style>
+@media print {
+    .no-print { display: none !important; }
+    .app-header { display: none !important; }
+    body { background: white !important; color: black !important; }
+    .card { border: 1px solid #ccc !important; box-shadow: none !important; }
+    .table th, .table td { color: black !important; border-color: #ccc !important; }
+}
+</style>
+{% endblock %}

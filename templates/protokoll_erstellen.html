@@ -1,0 +1,133 @@
+<!-- MIT HILFE VON GEMINI -->
+{% extends "layout.html" %}
+{% block title %}Protokoll – KLJB Litzendorf{% endblock %}
+
+{% block content %}
+<div class="main-content">
+
+    <a href="/" class="back-link">← Startseite</a>
+    <div class="page-title"><i data-lucide="file-text" class="icon-lg"></i> Laufendes Protokoll</div>
+
+    <!-- Aktuelle TOPs -->
+    {% if tops %}
+    <div class="section-heading">Aktuelle Themen im Zwischenspeicher</div>
+    <div class="card">
+        {% for top in tops %}
+        <div class="protokoll-punkt">
+            <div class="protokoll-item-header">
+                <div class="protokoll-titel">{{ top.titel }}</div>
+                <div class="protokoll-item-actions">
+                    <a href="{{ url_for('protokoll.top_bearbeiten', id=top.id) }}" class="btn btn-xs btn-secondary">Bearbeiten</a>
+                    <form action="{{ url_for('protokoll.top_loeschen', id=top.id) }}" method="POST" style="display:inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                        <button type="submit" class="btn btn-xs btn-danger"
+                            onclick="return confirm('TOP wirklich löschen?')">Löschen</button>
+                    </form>
+                </div>
+            </div>
+            <div class="protokoll-inhalt">{{ top.inhalt }}</div>
+            {% if top.aufgaben %}
+            <ul style="margin-top:6px;padding-left:16px;font-size:0.82rem;color:var(--text-muted);">
+                {% for aufg in top.aufgaben %}
+                <li><i data-lucide="list-todo" class="icon"></i> {{ aufg.text }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted text-sm mb-2">Noch keine Punkte eingetragen.</p>
+    {% endif %}
+
+    <!-- Neuer TOP -->
+    <div class="section-heading">Neuen Tagesordnungspunkt hinzufügen</div>
+    <div class="card">
+        <form action="/top_hinzufuegen" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+            <div class="form-group">
+                <label>Thema / Titel</label>
+                <input type="text" name="top_titel" placeholder="z.B. TOP 1: Begrüßung" required>
+            </div>
+
+            <div class="form-group">
+                <label>Was wurde besprochen?</label>
+                <textarea name="top_inhalt" placeholder="Ergebnisse, Beschlüsse..."></textarea>
+            </div>
+
+            <div class="section-heading" style="margin-top:14px;">Aufgaben zu diesem TOP</div>
+
+            <div id="aufgaben-vorschau" style="display:none;margin-bottom:10px;">
+                <div class="alert alert-info" style="margin-bottom:0;">
+                    <strong>Vorgemerkte Aufgaben:</strong>
+                    <ul id="aufgaben-liste" style="margin-top:6px;padding-left:16px;"></ul>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Was ist zu tun?</label>
+                <input type="text" id="temp_aufgabe_text" placeholder="z.B. Getränke bestellen">
+            </div>
+
+            <div class="form-group">
+                <label>Wer macht es?</label>
+                <div id="ms-leiter" class="ms-container"></div>
+            </div>
+
+            <button type="button" class="btn btn-secondary" onclick="fuegeAufgabeHinzu()" style="margin-bottom:12px;">+ Aufgabe hinzufügen</button>
+            <p class="text-muted text-sm mb-2">Du kannst mehrere Aufgaben nacheinander hinzufügen.</p>
+
+            <input type="hidden" name="aufgaben_json" id="aufgaben_json" value="[]">
+
+            <button type="submit">TOP speichern</button>
+        </form>
+    </div>
+
+    <!-- Archivieren -->
+    <div class="section-heading">Sitzung beenden & archivieren</div>
+    <div class="card">
+        <form action="/protokoll_archivieren" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+            <div class="form-group">
+                <label>Datum der Sitzung</label>
+                <input type="date" name="datum" required>
+            </div>
+
+            <div class="form-group">
+                <label>Protokollführer</label>
+                <input type="text" name="leitung" value="{{ current_user.name }}" required>
+            </div>
+
+            <p class="text-muted text-sm mb-2">
+                <i data-lucide="circle-alert" class="icon"></i> Erst beim Klick auf diesen Button wird das Protokoll geschlossen und die Aufgaben
+                landen in den To-Do-Listen der Gruppenleiter.
+            </p>
+
+            <button type="submit"><i data-lucide="check" class="icon"></i> Protokoll finalisieren & To-Dos verteilen</button>
+        </form>
+    </div>
+
+    <div class="mt-2">
+        <a href="/archiv" class="btn btn-secondary"><i data-lucide="archive" class="archive"></i> Zum Archiv</a>
+    </div>
+
+</div>
+
+<script src="{{ url_for('static', filename='js/multi_select.js') }}"></script>
+<script>
+window._leiterData = {
+    {% for l in leiter_liste %}{{ l.id }}: {{ l.name | tojson }}{% if not loop.last %},{% endif %}
+    {% endfor %}
+};
+(function() {
+    const opts = [
+        {% for l in leiter_liste %}{"id": {{ l.id }}, "name": {{ l.name | tojson }}}{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+    window.leiterMs = new MultiSelect('ms-leiter', opts, null, 'Name tippen...');
+})();
+</script>
+<script src="{{ url_for('static', filename='js/protokoll.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,121 @@
+{% extends "layout.html" %}
+{% block title %}Aufgaben – KLJB Litzendorf{% endblock %}
+
+{% block content %}
+<div class="main-content">
+
+    <a href="/" class="back-link">← Startseite</a>
+    <div class="page-title"><i data-lucide="badge-check" class="icon-lg"></i> Meine Aufgaben</div>
+
+    <div class="card">
+        {% if todos %}
+        {% for t in todos %}
+        <div class="todo-item">
+            <div>
+                <div class="todo-text"><strong>{{ t.aufgabe }}</strong></div>
+                <div class="todo-quelle">{{ t.quelle }}</div>
+            </div>
+            <form action="{{ url_for('todos.todo_erledigt', todo_id=t.id) }}" method="POST" style="display:inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                <button type="submit" class="btn btn-primary btn-sm">Erledigt ✓</button>
+            </form>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="text-muted text-sm">Keine offenen Aufgaben – gut gemacht! <i data-lucide="party-popper" class="icon"></i></p>
+        {% endif %}
+    </div>
+
+    {% if erledigte %}
+    <details>
+        <summary>Erledigte Aufgaben ({{ erledigte|length }})</summary>
+        <div>
+        {% for t in erledigte %}
+        <div class="todo-item">
+            <div>
+                <div class="todo-text todo-done">{{ t.aufgabe }}</div>
+                <div class="todo-quelle">{{ t.quelle }}</div>
+            </div>
+            <span class="badge badge-green">✓</span>
+        </div>
+        {% endfor %}
+        </div>
+    </details>
+    {% endif %}
+
+    {% if current_user.ist_admin %}
+    <hr>
+    <div class="section-heading">Admin – Aufgabe erstellen</div>
+    <div class="card">
+        <form action="{{ url_for('todos.todo_erstellen') }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+            <div class="form-group">
+                <label>Was ist zu tun?</label>
+                <input type="text" name="aufgabe" placeholder="z.B. Getränke bestellen" required>
+            </div>
+
+            <div class="form-group">
+                <label>Wer macht es?</label>
+                <div id="ms-todo-leiter" class="ms-container"></div>
+            </div>
+
+            <button type="submit">Aufgabe vergeben</button>
+        </form>
+    </div>
+
+    <hr>
+    <div class="section-heading">Admin – Übersicht alle Gruppenleiter</div>
+
+    {% for leiter in alle_leiter %}
+    <details>
+        <summary>
+            {{ leiter.name }}
+            <span class="text-muted text-sm">
+                {{ leiter.todos | selectattr('erledigt','equalto',false) | list | length }} offen ·
+                {{ leiter.todos | selectattr('erledigt','equalto',true)  | list | length }} erledigt
+            </span>
+        </summary>
+        <div>
+        {% for t in leiter.todos %}
+        <div class="todo-item">
+            <div>
+                <div class="todo-text {% if t.erledigt %}todo-done{% endif %}">{{ t.aufgabe }}</div>
+                <div class="todo-quelle">{{ t.quelle }}</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+                {% if t.erledigt %}
+                <span class="badge badge-green"><i data-lucide="check" class="icon"></i></span>
+                {% else %}
+                <span class="badge badge-yellow">offen</span>
+                {% endif %}
+                <form action="{{ url_for('todos.todo_loeschen', todo_id=t.id) }}" method="POST" style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                    <button type="submit" class="btn btn-xs btn-danger"
+                        onclick="return confirm('Aufgabe wirklich löschen?')">Löschen</button>
+                </form>
+            </div>
+        </div>
+        {% else %}
+        <p class="text-muted text-sm">Keine Todos.</p>
+        {% endfor %}
+        </div>
+    </details>
+    {% endfor %}
+    {% endif %}
+
+</div>
+
+{% if current_user.ist_admin %}
+<script src="{{ url_for('static', filename='js/multi_select.js') }}"></script>
+<script>
+(function() {
+    const opts = [
+        {% for l in alle_leiter %}{"id": {{ l.id }}, "name": {{ l.name | tojson }}}{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+    new MultiSelect('ms-todo-leiter', opts, 'leiter_ids', 'Name tippen...');
+})();
+</script>
+{% endif %}
+{% endblock %}

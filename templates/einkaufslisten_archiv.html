@@ -1,0 +1,47 @@
+{% extends "layout.html" %}
+{% block title %}Einkaufslisten-Archiv – KLJB Litzendorf{% endblock %}
+
+{% block content %}
+<div class="main-content">
+
+    <a href="{{ url_for('kueche.kueche') }}" class="back-link">← Küche</a>
+    <div class="page-title"><i data-lucide="archive" class="icon-lg"></i> Gespeicherte Einkaufslisten</div>
+
+    {% if listen %}
+    {% for liste in listen %}
+    <details>
+        <summary>
+            <span>{{ liste.name }} <span class="text-muted text-sm">· {{ liste.personen }} Personen · {{ liste.erstellt_am.strftime('%d.%m.%Y') }}</span></span>
+            <form action="{{ url_for('kueche.einkaufsliste_loeschen', id=liste.id) }}" method="POST"
+                  onsubmit="return confirm('Liste wirklich löschen?')" style="display:inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-danger btn-sm" style="margin-left:8px;">Löschen</button>
+            </form>
+        </summary>
+        <div style="padding-top:10px;">
+            <table class="table">
+                <thead>
+                    <tr><th>Rezept</th><th>Zutat</th><th>Menge</th><th>Einheit</th></tr>
+                </thead>
+                <tbody>
+                    {% for e in liste.eintraege %}
+                    <tr>
+                        <td class="text-muted text-sm">{{ e.rezept }}</td>
+                        <td>{{ e.zutat }}</td>
+                        <td><strong>{{ e.menge }}</strong></td>
+                        <td>{{ e.einheit }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </details>
+    {% endfor %}
+    {% else %}
+    <div class="card">
+        <p class="text-muted text-sm">Noch keine Einkaufslisten gespeichert.</p>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

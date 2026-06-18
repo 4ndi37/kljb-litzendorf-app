@@ -1,0 +1,298 @@
+{% extends "layout.html" %}
+{% block title %}{{ block.titel }} – KLJB Litzendorf{% endblock %}
+
+{% block content %}
+<div class="main-content">
+
+    <a href="{{ url_for('bloecke.bloecke_fuer_event', termin_id=block.termin_id) if current_user.ist_admin else url_for('bloecke.bloecke_uebersicht') }}" class="back-link">← Zurück zur Übersicht</a>
+
+    <!-- Block-Header -->
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:6px;">
+        <div class="page-title" style="margin-bottom:0;">
+            <i data-lucide="layout-list" class="icon-lg"></i> {{ block.titel }}
+        </div>
+        <span class="status-badge status-{{ block.status }}">
+            {% if block.status == 'entwurf' %}<i data-lucide="pencil" class="icon"></i> Entwurf
+            {% elif block.status == 'eingereicht' %}<i data-lucide="send" class="icon"></i> Eingereicht
+            {% else %}<i data-lucide="check-circle" class="icon"></i> Übernommen
+            {% endif %}
+        </span>
+    </div>
+
+    <!-- Meta-Info -->
+    <div class="card mb-2">
+        <div class="text-muted text-sm" style="display:flex;flex-direction:column;gap:4px;">
+            <div><i data-lucide="calendar" class="icon"></i> <strong class="text-white">{{ block.tag | wochentag }}</strong>
+                {% if block.zeit_von %} · {{ block.zeit_von }}{% if block.zeit_bis %}–{{ block.zeit_bis }}{% endif %} Uhr{% endif %}
+            </div>
+            {% if block.zugewiesene_leiter %}
+            <div><i data-lucide="users" class="icon"></i>
+                {{ block.zugewiesene_leiter | map(attribute='name') | join(', ') }}
+            </div>
+            {% endif %}
+            {% if block.beschreibung %}
+            <div style="margin-top:6px;padding-top:8px;border-top:1px solid var(--border);">
+                <i data-lucide="file-text" class="icon"></i> <em style="white-space: pre-line">{{ block.beschreibung }}</em>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Timeline -->
+    <div class="section-heading">Programmablauf</div>
+
+    {% if block.punkte %}
+    <div class="card" style="padding:0;overflow:hidden;">
+        {% for punkt in block.punkte %}
+        <div class="programm-item" style="padding:14px 16px;border-bottom:1px solid var(--border);">
+            <div class="programm-time">{{ punkt.uhrzeit }}<br><span style="font-size:0.7rem;">–{{ punkt.ende }}</span></div>
+            <div style="flex:1;">
+                <div class="programm-name">
+                    {% if punkt.kategorie == 'spiel' and punkt.konzept_info %}
+                    <i data-lucide="balloon" class="icon"></i> {{ punkt.konzept_info.titel }}
+                    {% else %}
+                    {{ punkt.custom_titel }}
+                    {% endif %}
+                </div>
+                <div class="text-muted text-sm">
+                    <span class="kategorie-tag">{{ punkt.kategorie }}</span>
+                    {% if punkt.notiz %} · {{ punkt.notiz }}{% endif %}
+                </div>
+            </div>
+            {% if darf_bearbeiten %}
+            <div style="display:flex;gap:6px;flex-shrink:0;align-items:center;">
+                <button onclick="toggleEditForm({{ punkt.id }})" class="btn btn-secondary btn-sm">
+                    <i data-lucide="pencil" class="icon"></i>
+                </button>
+                <form action="{{ url_for('bloecke.blockpunkt_loeschen', id=punkt.id) }}" method="POST" style="display:inline;"
+                      onsubmit="return confirm('Punkt löschen?')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger btn-sm"><i data-lucide="trash-2" class="icon"></i></button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Inline-Edit-Formular -->
+        {% if darf_bearbeiten %}
+        <div id="edit-form-{{ punkt.id }}" style="display:none;background:var(--bg-secondary);padding:14px 16px;border-bottom:1px solid var(--border);">
+            <form action="{{ url_for('bloecke.blockpunkt_bearbeiten', id=punkt.id) }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                    <div class="form-group" style="flex:1;min-width:100px;">
+                        <label>Von</label>
+                        <input type="time" name="uhrzeit" value="{{ punkt.uhrzeit }}" required>
+                    </div>
+                    <div class="form-group" style="flex:1;min-width:100px;">
+                        <label>Bis</label>
+                        <input type="time" name="ende" value="{{ punkt.ende }}" required>
+                    </div>
+                    <div class="form-group" style="flex:2;min-width:140px;">
+                        <label>Kategorie</label>
+                        <select name="kategorie" id="edit-kat-{{ punkt.id }}"
+                                onchange="toggleEditKonzept({{ punkt.id }}, this.value)">
+                            {% for k in kategorien %}
+                            <option value="{{ k }}" {% if k == punkt.kategorie %}selected{% endif %}>{{ k | capitalize }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group" id="edit-titel-wrap-{{ punkt.id }}"
+                     {% if punkt.kategorie == 'spiel' %}style="display:none;"{% endif %}>
+                    <label>Titel</label>
+                    <input type="text" name="custom_titel" value="{{ punkt.custom_titel }}">
+                </div>
+                <div class="form-group" id="edit-konzept-wrap-{{ punkt.id }}"
+                     {% if punkt.kategorie != 'spiel' %}style="display:none;"{% endif %}>
+                    <label>Spiel-Konzept</label>
+                    <div style="display:flex;gap:14px;margin-bottom:8px;flex-wrap:wrap;">
+                        <label class="checkbox-label">
+                            <input type="radio" name="konzept_modus" value="bestehend" checked
+                                   onclick="toggleKonzeptModus('edit-{{ punkt.id }}','bestehend')">
+                            Bestehendes wählen
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="radio" name="konzept_modus" value="neu"
+                                   onclick="toggleKonzeptModus('edit-{{ punkt.id }}','neu')">
+                            Neu erstellen
+                        </label>
+                    </div>
+                    <div id="edit-{{ punkt.id }}-konzept-bestehend">
+                        <select name="konzept_id">
+                            <option value="">– Konzept wählen –</option>
+                            {% for k in alle_konzepte %}
+                            <option value="{{ k.id }}" {% if punkt.konzept_id == k.id %}selected{% endif %}>{{ k.titel }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div id="edit-{{ punkt.id }}-konzept-neu" style="display:none;">
+                        <input type="text" name="neues_konzept_titel" placeholder="Titel des Spiels (z.B. Capture the Flag)">
+                        <textarea name="neues_konzept_beschreibung" placeholder="Kurze Beschreibung & Regeln" style="margin-top:6px;"></textarea>
+                        <input type="text" name="neues_konzept_material" placeholder="Benötigtes Material" style="margin-top:6px;">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Notiz <span class="text-muted text-sm">(optional)</span></label>
+                    <input type="text" name="notiz" value="{{ punkt.notiz or '' }}" placeholder="Kurze Notiz...">
+                </div>
+                <div style="display:flex;gap:8px;">
+                    <button type="submit" class="btn btn-primary btn-sm">Speichern</button>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="toggleEditForm({{ punkt.id }})">Abbrechen</button>
+                </div>
+            </form>
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted text-sm mb-2">Noch keine Programmpunkte eingetragen.</p>
+    {% endif %}
+
+    <!-- Neuen Punkt hinzufügen -->
+    {% if darf_bearbeiten %}
+    <div class="section-heading" style="margin-top:16px;">Punkt hinzufügen</div>
+    <div class="card">
+        <form action="{{ url_for('bloecke.blockpunkt_speichern', block_id=block.id) }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                <div class="form-group" style="flex:1;min-width:100px;">
+                    <label>Von <span style="color:var(--danger)">*</span></label>
+                    <input type="time" name="uhrzeit" required>
+                </div>
+                <div class="form-group" style="flex:1;min-width:100px;">
+                    <label>Bis <span style="color:var(--danger)">*</span></label>
+                    <input type="time" name="ende" required>
+                </div>
+                <div class="form-group" style="flex:2;min-width:140px;">
+                    <label>Kategorie</label>
+                    <select name="kategorie" id="add-kat" onchange="toggleAddKonzept(this.value)">
+                        {% for k in kategorien %}
+                        <option value="{{ k }}">{{ k | capitalize }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="form-group" id="add-titel-wrap">
+                <label>Titel</label>
+                <input type="text" name="custom_titel" placeholder="Titel des Programmpunkts">
+            </div>
+            <div class="form-group" id="add-konzept-wrap" style="display:none;">
+                <label>Spiel-Konzept</label>
+                <div style="display:flex;gap:14px;margin-bottom:8px;flex-wrap:wrap;">
+                    <label class="checkbox-label">
+                        <input type="radio" name="konzept_modus" value="bestehend" checked
+                               onclick="toggleKonzeptModus('add','bestehend')">
+                        Bestehendes wählen
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="radio" name="konzept_modus" value="neu"
+                               onclick="toggleKonzeptModus('add','neu')">
+                        Neu erstellen
+                    </label>
+                </div>
+                <div id="add-konzept-bestehend">
+                    <select name="konzept_id">
+                        <option value="">– Konzept wählen –</option>
+                        {% for k in alle_konzepte %}
+                        <option value="{{ k.id }}">{{ k.titel }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div id="add-konzept-neu" style="display:none;">
+                    <input type="text" name="neues_konzept_titel" placeholder="Titel des Spiels (z.B. Capture the Flag)">
+                    <textarea name="neues_konzept_beschreibung" placeholder="Kurze Beschreibung & Regeln" style="margin-top:6px;"></textarea>
+                    <input type="text" name="neues_konzept_material" placeholder="Benötigtes Material" style="margin-top:6px;">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Notiz <span class="text-muted text-sm">(optional)</span></label>
+                <input type="text" name="notiz" placeholder="Kurze Notiz...">
+            </div>
+            <button type="submit" class="btn btn-primary">Hinzufügen</button>
+        </form>
+    </div>
+    {% endif %}
+
+    <!-- Aktionen -->
+    <div class="section-heading" style="margin-top:16px;">Aktionen</div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+
+        <!-- Einreichen (zugewiesene Leiter + Admin, nur bei Entwurf) -->
+        {% if block.status == 'entwurf' and (current_user in block.zugewiesene_leiter or current_user.ist_admin) %}
+        <form action="{{ url_for('bloecke.block_einreichen', id=block.id) }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-primary" style="width:100%;"
+                    onclick="return confirm('Block zur Prüfung einreichen?')">
+                <i data-lucide="send" class="icon"></i> Block einreichen
+            </button>
+        </form>
+        {% endif %}
+
+        <!-- Admin-Aktionen -->
+        {% if current_user.ist_admin %}
+
+        {% if block.status == 'eingereicht' %}
+        <!-- Übernehmen -->
+        <form action="{{ url_for('bloecke.block_uebernehmen', id=block.id) }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-primary" style="width:100%;background:var(--accent);"
+                    onclick="return confirm('Alle Blockpunkte als Programmpunkte übernehmen?')">
+                <i data-lucide="check-circle" class="icon"></i> In Gesamtplan übernehmen
+            </button>
+        </form>
+
+        <!-- Zurückweisen -->
+        <div class="card" style="border-left:3px solid var(--warning);">
+            <div class="card-title" style="color:var(--warning);">Block zurückweisen</div>
+            <form action="{{ url_for('bloecke.block_zurueckweisen', id=block.id) }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="form-group">
+                    <label>Bemerkung <span class="text-muted text-sm">(optional)</span></label>
+                    <input type="text" name="bemerkung" placeholder="Was soll geändert werden?">
+                </div>
+                <button type="submit" class="btn btn-secondary"
+                        onclick="return confirm('Block zurückweisen?')">
+                    <i data-lucide="undo-2" class="icon"></i> Zurückweisen
+                </button>
+            </form>
+        </div>
+        {% endif %}
+
+        <!-- Block löschen -->
+        <form action="{{ url_for('bloecke.block_loeschen', id=block.id) }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-danger" style="width:100%;"
+                    onclick="return confirm('Block und alle Punkte dauerhaft löschen?')">
+                <i data-lucide="trash-2" class="icon"></i> Block löschen
+            </button>
+        </form>
+
+        {% endif %}
+    </div>
+
+</div>
+
+<script>
+function toggleEditForm(id) {
+    const el = document.getElementById('edit-form-' + id);
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+function toggleEditKonzept(id, val) {
+    document.getElementById('edit-titel-wrap-' + id).style.display = val === 'spiel' ? 'none' : 'block';
+    document.getElementById('edit-konzept-wrap-' + id).style.display = val === 'spiel' ? 'block' : 'none';
+}
+
+function toggleAddKonzept(val) {
+    document.getElementById('add-titel-wrap').style.display = val === 'spiel' ? 'none' : 'block';
+    document.getElementById('add-konzept-wrap').style.display = val === 'spiel' ? 'block' : 'none';
+}
+
+function toggleKonzeptModus(prefix, modus) {
+    const bestehend = document.getElementById(prefix + '-konzept-bestehend');
+    const neu = document.getElementById(prefix + '-konzept-neu');
+    if (bestehend) bestehend.style.display = modus === 'bestehend' ? 'block' : 'none';
+    if (neu) neu.style.display = modus === 'neu' ? 'block' : 'none';
+}
+</script>
+{% endblock %}

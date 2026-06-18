@@ -1,0 +1,24 @@
+{% extends "layout.html" %}
+{% block title %}Login – KLJB Litzendorf{% endblock %}
+
+{% block content %}
+<div class="login-wrapper">
+    <div class="login-box">
+        <div class="login-logo">
+            <h1>KLJB Litzendorf</h1>
+            <p>Gruppenleiter-Bereich</p>
+        </div>
+
+        {% if error %}
+        <p class="error-msg">{{ error }}</p>
+        {% endif %}
+
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <input type="text"     name="name"     placeholder="Dein Name"  required>
+            <input type="password" name="passwort" placeholder="Passwort"   required>
+            <button type="submit" class="btn-block" style="margin-top:4px;">Anmelden</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

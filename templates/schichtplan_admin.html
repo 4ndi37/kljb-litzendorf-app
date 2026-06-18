@@ -1,0 +1,110 @@
+<!-- MIT HILFE VON GEMINI -->
+{% extends "layout.html" %}
+{% block title %}Schichtplan Admin – KLJB Litzendorf{% endblock %}
+
+{% block content %}
+<div class="main-content">
+
+    <a href="{{ url_for('admin.admin_konsole') }}" class="back-link">← Admin-Konsole</a>
+    <div class="page-title"><i data-lucide="calendar" class="icon-lg"></i> Schichtplan-Verwaltung</div>
+
+    <!-- Generator -->
+    <div class="section-heading">Neue Schichten generieren</div>
+    <div class="card">
+        <form action="{{ url_for('admin.schichten_generieren') }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+            <div class="form-group">
+                <label>Event-Name</label>
+                <input type="text" name="event_name" placeholder="z.B. Weihnachtsmarkt Verkauf" required>
+            </div>
+
+            <div class="form-group">
+                <label>Datum</label>
+                <input type="date" name="datum" required>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Von</label>
+                    <input type="time" name="start_zeit" value="10:00" required>
+                </div>
+                <div class="form-group">
+                    <label>Bis</label>
+                    <input type="time" name="ende_zeit" value="20:00" required>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Schichtdauer (Stunden)</label>
+                    <input type="number" name="stunden" step="0.5" value="2" required>
+                </div>
+                <div class="form-group">
+                    <label>Personen pro Schicht</label>
+                    <input type="number" name="personen" value="2" min="1">
+                </div>
+            </div>
+
+            <button type="submit"><i data-lucide="settings" class="icon"></i> Schichten generieren</button>
+        </form>
+    </div>
+
+    <!-- Aktuelle Schichten -->
+    <div class="section-heading">Aktueller Plan</div>
+    <div class="card" style="padding:0;overflow:hidden;">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Event</th>
+                    <th>Datum</th>
+                    <th>Zeit</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for schicht in schichten %}
+                <tr>
+                    <td>{{ schicht.event_name }}</td>
+                    <td>{{ schicht.datum.strftime('%d.%m.%Y') }}</td>
+                    <td>{{ schicht.uhrzeit }}</td>
+                    <td>
+                        {% if schicht.leiter_id %}
+                        <span class="text-success"><i data-lucide="check" class="icon"></i> {{ schicht.besitzer.name }}</span>
+                        {% else %}
+                        <span class="text-warning"><i data-lucide="circle" class="icon"></i> Frei</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <form action="{{ url_for('admin.schicht_loeschen', schicht_id=schicht.id) }}" method="POST"
+                              onsubmit="return confirm('Diese Schicht wirklich löschen?')">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-danger btn-sm"><i data-lucide="x" class="icon"></i></button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-muted text-sm" style="padding:16px;">
+                        Noch keine Schichten. Nutze den Generator oben!
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Gefahrenzone -->
+    <div class="card mt-3" style="border-color:rgba(237,66,69,.3);">
+        <div class="card-title text-danger"><i data-lucide="circle-alert" class="icon"></i> Gefahrenzone</div>
+        <p class="text-muted text-sm mb-2">Löscht alle Schichten unwiderruflich.</p>
+        <form action="{{ url_for('admin.schichtplan_leeren') }}" method="POST"
+              onsubmit="return confirm('ACHTUNG: Das löscht wirklich ALLE Schichten! Bist du sicher?')">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <button type="submit" class="btn btn-danger"><i data-lucide="rotate-ccw" class="icon"></i> Gesamten Schichtplan zurücksetzen</button>
+        </form>
+    </div>
+
+</div>
+{% endblock %}

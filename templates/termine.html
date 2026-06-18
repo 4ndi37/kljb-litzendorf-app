@@ -1,0 +1,108 @@
+{% extends "layout.html" %}
+{% block title %}Termine – KLJB Litzendorf{% endblock %}
+
+{% block content %}
+<div class="main-content">
+
+    <a href="/" class="back-link">← Startseite</a>
+    <div class="page-title"><i data-lucide="calendar" class="icon-lg"></i> Termine</div>
+
+    <div class="card">
+        {% if alle_termine %}
+        {% for termin in alle_termine %}
+        <div class="termin-item">
+            <div>
+                <div class="termin-name">{{ termin.name }}</div>
+                <div class="termin-info">
+                    {% if termin.start == termin.ende %}
+                        <i data-lucide="calendar" class="icon"></i> {{ termin.start.strftime('%d.%m.%Y') }}
+                    {% else %}
+                        <i data-lucide="calendar" class="icon"></i> {{ termin.start.strftime('%d.%m.%Y') }} – {{ termin.ende.strftime('%d.%m.%Y') }}
+                    {% endif %}
+                    {% if termin.startzeit %} · <i data-lucide="clock" class="icon"></i> {{ termin.startzeit }} Uhr{% endif %}
+                    {% if termin.ort %} · <i data-lucide="map-pin" class="icon"></i> {{ termin.ort }}{% endif %}
+                </div>
+                <div class="termin-type">{{ termin.typ }}</div>
+            </div>
+            {% if termin.typ == 'gruppenleiterrunde' %}
+            <div class="abstimmung-box">
+                <div class="abstimmung-label"><i data-lucide="users" class="icon"></i> Kannst du kommen?</div>
+                <form action="/abstimmung_speichern" method="POST" class="abstimmung-buttons">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="termin_id" value="{{ termin.id }}">
+                    <button name="antwort" value="ja" class="btn btn-sm {% if meine_antworten[termin.id] == 'ja' %}btn-primary{% else %}btn-secondary{% endif %}">
+                        <i data-lucide="check" class="icon"></i> Ja
+                    </button>
+                    <button name="antwort" value="nein" class="btn btn-sm {% if meine_antworten[termin.id] == 'nein' %}btn-danger{% else %}btn-secondary{% endif %}">
+                        <i data-lucide="x" class="icon"></i> Nein
+                    </button>
+                </form>
+                {% if abstimmungen[termin.id] %}
+                <div class="abstimmung-ergebnis">
+                    {% for a in abstimmungen[termin.id] %}
+                    <span class="abstimmung-chip {% if a.antwort == 'ja' %}chip-ja{% else %}chip-nein{% endif %}">{{ a.leiter.name }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+            {% if termin.leiter_id == current_user.id or current_user.ist_admin %}
+            <form action="{{ url_for('termine.termin_loeschen', id=termin.id) }}" method="POST" style="display:inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                <button type="submit" class="btn btn-danger btn-sm">Löschen</button>
+            </form>
+            {% endif %}
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="text-muted text-sm">Noch keine Termine eingetragen.</p>
+        {% endif %}
+    </div>
+
+    <div class="section-heading">Neuen Termin hinzufügen</div>
+    <div class="card">
+        <form action="/termin_speichern" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+            <div class="form-group">
+                <label>Art des Termins</label>
+                <select name="event_typ">
+                    <option value="sonstiges">Sonstiges / Treffen</option>
+                    <option value="gruppenleiterrunde">Gruppenleiterrunde</option>
+                    <option value="zeltlager">Zeltlager</option>
+                    <option value="kindertage">Kindertage</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Name des Events</label>
+                <input type="text" name="event_name" placeholder="z.B. Zeltlager 2026" required>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Startdatum</label>
+                    <input type="date" name="start_datum" required>
+                </div>
+                <div class="form-group">
+                    <label>Enddatum</label>
+                    <input type="date" name="end_datum" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Startzeit (optional)</label>
+                <input type="time" name="startzeit">
+            </div>
+
+            <div class="form-group">
+                <label>Ort</label>
+                <input type="text" name="event_ort" placeholder="z.B. Pfarrheim Litzendorf" required>
+            </div>
+
+            <button type="submit">Termin speichern</button>
+        </form>
+    </div>
+
+</div>
+{% endblock %}

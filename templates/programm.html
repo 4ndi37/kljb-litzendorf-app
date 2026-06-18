@@ -1,0 +1,81 @@
+{% extends "layout.html" %}
+{% block title %}Programm – KLJB Litzendorf{% endblock %}
+
+{% block content %}
+<div class="main-content">
+
+    <a href="/admin_konsole" class="back-link">← Admin-Konsole</a>
+    <div class="flex-between mb-2">
+        <div class="page-title" style="margin-bottom:0;"><i data-lucide="calendar" class="icon-lg"></i> Programm & Zeitplan</div>
+        <div style="display:flex;gap:8px;">
+            <a href="{{ url_for('programm.programm_archiv') }}" class="btn btn-secondary btn-sm"><i data-lucide="archive" class="icon"></i> Archiv</a>
+            {% if current_user.ist_admin %}
+            <a href="/programm_neu" class="btn btn-primary btn-sm">+ Punkt hinzufügen</a>
+            {% endif %}
+        </div>
+    </div>
+
+    {% set has_content = namespace(value=false) %}
+    {% for tag in wochen_plan %}{% if wochen_plan[tag] %}{% set has_content.value = true %}{% endif %}{% endfor %}
+
+    {% if has_content.value %}
+    {% for tag in wochen_plan %}
+    {% if wochen_plan[tag] %}
+    <details>
+        <summary>{{ tag | wochentag }}</summary>
+        <div>
+            {% for punkt in wochen_plan[tag] %}
+            <div class="programm-item">
+                <div class="programm-time">{{ punkt.uhrzeit }}<br><span style="font-size:0.7rem;">–{{ punkt.ende }}</span></div>
+                <div style="flex:1;">
+                    <div class="programm-name">
+                        {% if punkt.kategorie == 'spiel' and punkt.konzept_info %}
+                        <i data-lucide="gamepad-2" class="icon"></i> {{ punkt.konzept_info.titel }}
+                        {% else %}
+                        {% if punkt.kategorie == 'essen' %}<i data-lucide="utensils" class="icon"></i>
+                        {% elif punkt.kategorie == 'freizeit' %}<i data-lucide="beer" class="icon"></i>
+                        {% elif punkt.kategorie == 'gottesdienst' %}<i data-lucide="church" class="icon"></i>
+                        {% elif punkt.kategorie == 'reflexion' %}<i data-lucide="brain" class="icon"></i>
+                        {% elif punkt.kategorie == 'getraenke' %}<i data-lucide="cup-soda" class="icon"></i>
+                        {% endif %}
+                        {{ punkt.custom_titel }}
+                        {% endif %}
+                    </div>
+                    {% if punkt.verantwortliche %}
+                    <div class="programm-meta"><i data-lucide="user" class="icon"></i> {{ punkt.verantwortliche }}</div>
+                    {% endif %}
+                </div>
+                {% if current_user.ist_admin %}
+                <button onclick="openDeleteModal('{{ punkt.id }}')" class="btn btn-danger btn-sm" title="Löschen"><i data-lucide="trash" class="icon"></i></button>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </details>
+    {% endif %}
+    {% endfor %}
+    {% else %}
+    <div class="card">
+        <p class="text-muted text-sm">Noch keine Programmpunkte eingetragen.</p>
+    </div>
+    {% endif %}
+
+</div>
+
+<!-- Delete Modal -->
+<div id="deleteModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;align-items:center;justify-content:center;">
+    <div style="background:var(--bg-card);border-radius:var(--radius);padding:28px;max-width:340px;width:90%;box-shadow:var(--shadow);border:1px solid var(--border);">
+        <div class="card-title mb-2"><i data-lucide="circle-alert" class="icon"></i> Punkt löschen?</div>
+        <p class="text-muted text-sm mb-3">Bist du sicher, dass du diesen Programmpunkt entfernen möchtest?</p>
+        <div style="display:flex;gap:10px;">
+            <button onclick="closeModal()" class="btn btn-secondary">Abbrechen</button>
+            <form id="deleteForm" method="POST" action="#">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-danger">Ja, löschen</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/programm.js') }}"></script>
+{% endblock %}

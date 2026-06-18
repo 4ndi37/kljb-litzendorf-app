@@ -1,0 +1,45 @@
+{% extends "layout.html" %}
+{% block title %}Protokoll-Archiv – KLJB Litzendorf{% endblock %}
+
+{% block content %}
+<div class="main-content">
+
+    <a href="/" class="back-link">← Startseite</a>
+    <div class="page-title"><i data-lucide="archive" class="icon-lg"></i> Protokoll-Archiv</div>
+
+    {% if protokolle %}
+    {% for protokoll in protokolle %}
+    <details class="archiv-item">
+        <summary>
+            <span>Sitzung vom {{ protokoll.datum.strftime('%d.%m.%Y') }}{% if protokoll.schreiber %} · {{ protokoll.schreiber }}{% endif %}</span>
+            {% if current_user.ist_admin %}
+            <span class="archiv-admin-actions" onclick="event.stopPropagation()">
+                <a href="{{ url_for('protokoll.protokoll_bearbeiten', id=protokoll.id) }}" class="btn btn-xs btn-secondary">Bearbeiten</a>
+                <form action="{{ url_for('protokoll.protokoll_loeschen', id=protokoll.id) }}" method="POST" style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                    <button type="submit" class="btn btn-xs btn-danger"
+                        onclick="return confirm('Protokoll wirklich löschen?')">Löschen</button>
+                </form>
+            </span>
+            {% endif %}
+        </summary>
+        <div>
+            {% for top in protokoll.themen %}
+            <div class="protokoll-punkt">
+                <div class="protokoll-titel">{{ top.titel }}</div>
+                <div class="protokoll-inhalt">{{ top.inhalt }}</div>
+            </div>
+            {% else %}
+            <p class="text-muted text-sm">Keine Punkte.</p>
+            {% endfor %}
+        </div>
+    </details>
+    {% endfor %}
+    {% else %}
+    <div class="card">
+        <p class="text-muted text-sm">Das Archiv ist noch leer. Sobald du ein Protokoll archivierst, erscheint es hier.</p>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

@@ -1,0 +1,72 @@
+{% extends "layout.html" %}
+{% block title %}TOP bearbeiten – KLJB Litzendorf{% endblock %}
+
+{% block content %}
+<div class="main-content">
+
+    <a href="{{ url_for('protokoll.protokoll_ansicht_route') }}" class="back-link">← Laufendes Protokoll</a>
+    <div class="page-title"><i data-lucide="pencil" class="icon-lg"></i> TOP bearbeiten</div>
+
+    <div class="card">
+        <form action="{{ url_for('protokoll.top_bearbeiten', id=top.id) }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+            <div class="form-group">
+                <label>Thema / Titel</label>
+                <input type="text" name="top_titel" value="{{ top.titel }}" required>
+            </div>
+
+            <div class="form-group">
+                <label>Was wurde besprochen?</label>
+                <textarea name="top_inhalt">{{ top.inhalt }}</textarea>
+            </div>
+
+            <div class="section-heading" style="margin-top:14px;">Aufgaben zu diesem TOP</div>
+
+            <div id="aufgaben-vorschau" style="display:none;margin-bottom:10px;">
+                <div class="alert alert-info" style="margin-bottom:0;">
+                    <strong>Vorgemerkte Aufgaben:</strong>
+                    <ul id="aufgaben-liste" style="margin-top:6px;padding-left:16px;"></ul>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Was ist zu tun?</label>
+                <input type="text" id="temp_aufgabe_text" placeholder="z.B. Getränke bestellen">
+            </div>
+
+            <div class="form-group">
+                <label>Wer macht es?</label>
+                <div id="ms-leiter" class="ms-container"></div>
+            </div>
+
+            <button type="button" class="btn btn-secondary" onclick="fuegeAufgabeHinzu()" style="margin-bottom:12px;">+ Aufgabe hinzufügen</button>
+            <p class="text-muted text-sm mb-2">Du kannst mehrere Aufgaben nacheinander hinzufügen.</p>
+
+            <input type="hidden" name="aufgaben_json" id="aufgaben_json" value="[]">
+
+            <button type="submit">Änderungen speichern</button>
+        </form>
+    </div>
+
+</div>
+
+<script src="{{ url_for('static', filename='js/multi_select.js') }}"></script>
+<script>
+window._leiterData = {
+    {% for l in leiter_liste %}{{ l.id }}: {{ l.name | tojson }}{% if not loop.last %},{% endif %}
+    {% endfor %}
+};
+(function() {
+    const opts = [
+        {% for l in leiter_liste %}{"id": {{ l.id }}, "name": {{ l.name | tojson }}}{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+    window.leiterMs = new MultiSelect('ms-leiter', opts, null, 'Name tippen...');
+})();
+</script>
+<script src="{{ url_for('static', filename='js/protokoll.js') }}"></script>
+<script>
+initAufgaben({{ top.aufgaben | tojson }});
+</script>
+{% endblock %}

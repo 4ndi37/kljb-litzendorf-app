@@ -1,0 +1,37 @@
+{% extends "layout.html" %}
+{% block title %}Zeitplan-Archiv – KLJB Litzendorf{% endblock %}
+
+{% block content %}
+<div class="main-content">
+
+    <a href="/programm" class="back-link">← Zum Zeitplan</a>
+    <a href="/admin_konsole" class="back-link">← Admin-Konsole</a>
+    <div class="page-title"><i data-lucide="archive" class="icon-lg"></i> Zeitplan-Archiv</div>
+
+    {% if events %}
+    <div style="display:flex;flex-direction:column;gap:10px;">
+        {% for event in events %}
+        <a href="{{ url_for('programm.programm_archiv_detail', termin_id=event.id) }}"
+           style="text-decoration:none;">
+            <div class="card" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+                <div>
+                    <div style="font-weight:600;color:var(--text-white);font-size:1rem;">{{ event.name }}</div>
+                    <div class="text-muted text-sm" style="margin-top:4px;">
+                        <i data-lucide="calendar" class="icon"></i>
+                        {{ event.start.strftime('%d.%m.%Y') }} – {{ event.ende.strftime('%d.%m.%Y') }}
+                        {% if event.ort %}· <i data-lucide="map-pin" class="icon"></i> {{ event.ort }}{% endif %}
+                    </div>
+                </div>
+                <span class="badge badge-gray">{{ event.typ | capitalize }}</span>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card">
+        <p class="text-muted text-sm">Noch keine abgeschlossenen Events im Archiv.</p>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
